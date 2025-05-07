@@ -1,0 +1,4 @@
+/module_a/__pycache__
+/module_b/__pycache__
+.venv
+/module_d/data
