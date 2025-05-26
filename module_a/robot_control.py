@@ -1,5 +1,7 @@
-from logging_handler import GuiLogs
 from mcx.mcx_control import *
+
+from logging_handler import setup_logger
+logger = setup_logger(__name__)
 
 import time
 
@@ -32,7 +34,6 @@ class RobotController:
         self.ip = ip_adress
         self.robot = MCX()
         self.state = RobotState()
-        self.logs = GuiLogs()
         self.connect()
         
 
@@ -42,14 +43,14 @@ class RobotController:
             self.logs.add_log('Робот подключен')
 
         except Exception as e:
-            self.logs.add_log(f'Ошибка подключения: {str(e)}', True)
+            logger.debug(f'Ошибка подключения: {str(e)}')
 
     def move_to_start(self):
         try:
             self.robot.move_to_start()
             time.sleep(1)
         except Exception as e:
-            self.logs.add_log(f'Ошибка перемещения: {str(e)}', True)
+            logger.debug(f'Ошибка перемещения: {str(e)}')
         
 
     # def switch_state(self, new_state):
