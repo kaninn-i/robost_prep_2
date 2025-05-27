@@ -40,7 +40,7 @@ class RobotController:
     def connect(self):
         try:
             self.robot.connect(self.ip)
-            self.logs.add_log('Робот подключен')
+            logger.debug('Робот подключен')
 
         except Exception as e:
             logger.debug(f'Ошибка подключения: {str(e)}')

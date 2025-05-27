@@ -128,9 +128,6 @@ class Ui_Form(object):
         self.logs_label = QtWidgets.QLabel(Form)
         self.logs_label.setGeometry(QtCore.QRect(10, 610, 67, 17))
         self.logs_label.setObjectName("logs_label")
-        self.logs_data = QtWidgets.QListView(Form)
-        self.logs_data.setGeometry(QtCore.QRect(10, 630, 971, 241))
-        self.logs_data.setObjectName("logs_data")
         self.move_cords_table = QtWidgets.QTableWidget(Form)
         self.move_cords_table.setGeometry(QtCore.QRect(10, 490, 701, 51))
         self.move_cords_table.setObjectName("move_cords_table")
@@ -156,6 +153,10 @@ class Ui_Form(object):
         self.move_cords_button = QtWidgets.QPushButton(Form)
         self.move_cords_button.setGeometry(QtCore.QRect(10, 550, 121, 25))
         self.move_cords_button.setObjectName("move_cords_button")
+        self.logs_plaintext = QtWidgets.QPlainTextEdit(Form)
+        self.logs_plaintext.setGeometry(QtCore.QRect(10, 630, 981, 241))
+        self.logs_plaintext.setTextInteractionFlags(QtCore.Qt.TextSelectableByKeyboard|QtCore.Qt.TextSelectableByMouse)
+        self.logs_plaintext.setObjectName("logs_plaintext")
 
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
@@ -163,12 +164,12 @@ class Ui_Form(object):
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "Form"))
-        self.On_button.setText(_translate("Form", "Вкл"))
+        self.On_button.setText(_translate("Form", "Выкл"))
         self.Pause_button.setText(_translate("Form", "Пауза"))
         self.Stop_button.setText(_translate("Form", "Экстр. тормоз"))
         self.State.setText(_translate("Form", "Состояние:"))
         self.Joystik_label.setText(_translate("Form", "Джойстик"))
-        self.State_data.setText(_translate("Form", "Выключен"))
+        self.State_data.setText(_translate("Form", "В работе"))
         self.video_label.setText(_translate("Form", "Видео с камер"))
         self.motor_1_label.setText(_translate("Form", "Мотор 1"))
         self.motor_2_label.setText(_translate("Form", "Мотор 2"))
@@ -212,13 +213,3 @@ class Ui_Form(object):
         item.setText(_translate("Form", "6"))
         self.move_cords_label.setText(_translate("Form", "Задать координаты"))
         self.move_cords_button.setText(_translate("Form", "Переместить"))
-
-
-if __name__ == "__main__":
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    Form = QtWidgets.QWidget()
-    ui = Ui_Form()
-    ui.setupUi(Form)
-    Form.show()
-    sys.exit(app.exec_())

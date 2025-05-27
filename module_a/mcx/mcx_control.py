@@ -13,10 +13,10 @@ class MCX():
     def get_cart_pos(self):
         return [1,1,1,1,1.1]
 
-    def MoveJ(self):
+    def MoveJ(self, cords):
         pass
 
-    def MoveL(self):
+    def MoveL(self, cords):
         pass
 
     def engage(self):

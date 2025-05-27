@@ -2,6 +2,20 @@ import logging
 from logging.handlers import RotatingFileHandler
 import os
 
+from PyQt5.QtCore import QObject, pyqtSignal
+
+class QtLogHandler(QObject, logging.Handler):
+    log_signal = pyqtSignal(str)
+
+    def __init__(self):
+        super().__init__()
+        self.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+
+    def emit(self, record):
+        msg = self.format(record)
+        self.log_signal.emit(msg)
+
+
 def setup_logger(name):
     os.makedirs('logs', exist_ok = True)
 
@@ -14,41 +28,24 @@ def setup_logger(name):
         backupCount=5,
         encoding='utf-8'
     )
-    file_handler.setFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    
+    file_handler.setFormatter(
+        logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        )
     
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-    console_handler.setFormatter('%(levelname)s - %(message)s')
+    console_handler.setLevel(logging.DEBUG)
+    console_handler.setFormatter(
+        logging.Formatter('%(levelname)s - %(message)s')
+        )
+    
+    qt_handler = QtLogHandler()
 
     logger.handlers.clear()
     
     logger.addHandler(console_handler)
     logger.addHandler(file_handler)
+    logger.addHandler(qt_handler)
 
     return logger
 
-
-
-
-
-
-# class GuiLogs:
-#     def __init__(self):
-#         self.logs = []
-#         self.file_logs = []
-    
-#     def add_log(self, log, to_file=False):
-#         self.logs.append(log)
-#         if to_file:
-#             self.file_logs.append(log)
-    
-#     def get_logs(self):
-#         return self.logs
-     
-#     def save_to_file(self):
-#         with open(".log", "w") as f:
-#             f.writelines([ i + "\n" for i in self.file_logs])
-
-
-# logs = GuiLogs()
+# --------------------------------------------

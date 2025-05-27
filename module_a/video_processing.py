@@ -14,7 +14,7 @@ class VideoProcessor:
         # словарь для кластеризации объектов
         detected_objects = {color['name']: [] for color in self.config.COLOR_RANGES}
 
-        for color in self.color_ranges:
+        for color in self.config.COLOR_RANGES:
             # создание маски для цвета
             masks = []
             for l, u in zip(color['lower'], color['upper']):

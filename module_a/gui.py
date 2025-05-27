@@ -1,10 +1,9 @@
 from design import Ui_Form
 from config import Config
 from robot_control import RobotController, RobotState
+from video_processing import VideoProcessor
 from mcx.mcx_control import *
 
-
-import numpy as np
 import cv2
 import time
 
@@ -15,7 +14,6 @@ from PyQt5.QtGui import QImage, QPixmap
 from logging_handler import setup_logger
 logger = setup_logger(__name__)
 
-
 class RobotControlGUI(QMainWindow, Ui_Form):
     def __init__(self):
         super().__init__()
@@ -23,6 +21,7 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         self.robot_controller = RobotController(self.config.ROBOT_IP)
         self.robot_state = RobotState()
         self.robot = MCX()
+        self.video_processor = VideoProcessor()
         self.init_ui()
         self.init_cameras()
 
@@ -58,12 +57,6 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         self.ui.motor_4_minus.clicked.connect(lambda: self.update_cords(5, 0.05))
         self.ui.motor_6_minus.clicked.connect(lambda: self.update_cords(6, -0.05))
         self.ui.motor_6_plus.clicked.connect(lambda: self.update_cords(6, 0.05))
-
-        # self.Qtimer = QtCore.QTimer()
-        # self.Qtimer.setInterval(200)
-        # self.Qtimer.timeout.connect(self.update_logs)
-        # self.Qtimer.start()
-        
         
     def init_cameras(self):
         # #  -------------------- камеры ------------
@@ -89,13 +82,6 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         self.video_timer.timeout.connect(self.update_frames)
         self.video_timer.start(30)  # 30 ms интервал
 
-    def testfunc():
-        print('test')
-        
-    # def update_logs(self):
-    #     self.model_1 = QtCore.QStringListModel(self)
-    #     self.model_1.setStringList(logs.get_logs())
-    #     self.ui.logs_data.setModel(self.model_1)
 
     def update_cords(self, motor_number, x):
         if self.move_variant == "J":
@@ -141,32 +127,34 @@ class RobotControlGUI(QMainWindow, Ui_Form):
 
     def changeOnOffState(self):
         _translate = QtCore.QCoreApplication.translate
-        if self.robot_state.current_state == 'Выключен' or self.robot_state.current_state == 'Ожидает':
+        if self.robot_state.current == self.robot_state.STATES['OFF'] or self.robot_state.current == self.robot_state.STATES['WAIT']:
             self.ui.On_button.setText(_translate("Form", "Выкл"))
-            self.robot_state.switch_state('ON')
-            self.ui.State_data.setText(_translate("Form", self.robot_state.current_state))
+            self.robot_state.set_state('ON')
+            self.ui.State_data.setText(_translate("Form", self.robot_state.current))
             self.robot.move_to_start()
             time.sleep(1)
             logger.debug('Робот включен и находится на стартовой позиции')
 
         else:
             self.ui.On_button.setText(_translate("Form", "Вкл"))
-            self.robot_state.switch_state('OFF')
-            self.ui.State_data.setText(_translate("Form", self.robot_state.current_state))
+            self.robot_state.set_state('OFF')
+            self.ui.State_data.setText(_translate("Form", self.robot_state.current))
             self.robot.move_to_start()
             time.sleep(1)
             logger.debug('Робот выключен')
 
     def changePauseState(self):
         _translate = QtCore.QCoreApplication.translate
-        self.robot_state.switch_state('WAIT')
-        self.ui.State_data.setText(_translate("Form", self.robot_state.current_state))
+        self.robot_state.set_state('WAIT')
+        self.ui.State_data.setText(_translate("Form", self.robot_state.current))
         self.ui.On_button.setText(_translate("Form", "Вкл"))
+        logger.debug('Робот приостановил свою работу')
 
     def changeEmergencyState(self):
         _translate = QtCore.QCoreApplication.translate
-        self.robot_state.switch_state('EMERGENCY')
-        self.ui.State_data.setText(_translate("Form", self.robot_state.current_state))
+        self.robot_state.set_state('EMERGENCY')
+        self.ui.State_data.setText(_translate("Form", self.robot_state.current))
+        logger.error('Робот аварийно остановлен')
 
     def changeRobotPosition(self):
         for row in range(self.ui.move_cords_table.rowCount()):
@@ -206,7 +194,7 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         if self.cap3.isOpened():
             ret3, frame3 = self.cap3.read()
             if ret3:
-                frame3 = self.process_frame(frame3)
+                frame3 = self.video_processor.process_frame(frame3)
                 # frame3 = cv2.cvtColor(frame3, cv2.COLOR_BGR2RGB)
                 # img3 = QImage(frame3, frame3.shape[1], frame3.shape[0], QImage.Format_RGB888)
                 img3 = QImage(frame3.data, frame3.shape[1], frame3.shape[0], 

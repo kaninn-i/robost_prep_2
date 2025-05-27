@@ -23,7 +23,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Вкл</string>
+    <string>Выкл</string>
    </property>
   </widget>
   <widget class="QPushButton" name="Pause_button">
@@ -88,7 +88,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Выключен</string>
+    <string>В работе</string>
    </property>
   </widget>
   <widget class="QFrame" name="videoframe_1">
@@ -484,16 +484,6 @@
     <string>Логи</string>
    </property>
   </widget>
-  <widget class="QListView" name="logs_data">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>630</y>
-     <width>971</width>
-     <height>241</height>
-    </rect>
-   </property>
-  </widget>
   <widget class="QTableWidget" name="move_cords_table">
    <property name="geometry">
     <rect>
@@ -563,6 +553,19 @@
    </property>
    <property name="text">
     <string>Переместить</string>
+   </property>
+  </widget>
+  <widget class="QPlainTextEdit" name="logs_plaintext">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>630</y>
+     <width>981</width>
+     <height>241</height>
+    </rect>
+   </property>
+   <property name="textInteractionFlags">
+    <set>Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
    </property>
   </widget>
  </widget>
