@@ -53,7 +53,7 @@ class VideoProcessor:
                 # Визуализация
                 self._draw_object_info(frame, approx, color_name, shape)
         
-        return frame
+        return frame, shape, color_name
 
     def _determine_shape(self, vertices, approx):
         if vertices == 3:

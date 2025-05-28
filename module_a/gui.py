@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import QLabel, QMainWindow
 from PyQt5 import QtCore
 from PyQt5.QtGui import QImage, QPixmap
 
-from logging_handler import setup_logger
+from logging_handler import setup_logger, QtLogHandler
 logger = setup_logger(__name__)
 
 class RobotControlGUI(QMainWindow, Ui_Form):
@@ -22,16 +22,34 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         self.robot_state = RobotState()
         self.robot = MCX()
         self.video_processor = VideoProcessor()
+
         self.init_ui()
         self.init_cameras()
-
+        self.setup_logging()
 
         self.motors_list_joint = list(self.robot.get_joint_pos())
         self.motors_list_cart = list(self.robot.get_cart_pos())
         self.motor_list_actual = list() # запихнуть в стейт?
-        logger.debug(f'Текущее положение:'+ ''.join(str(i) for i in self.motors_list_joint))
+        logger.debug(f'Текущее положение: '+ ' '.join(str(i) for i in self.motors_list_joint))
         self.move_variant = "J"
 
+
+    def setup_logging(self):
+        # Получаем логгер
+        logger = setup_logger(__name__)
+        
+        # Подключаем сигнал GUI обработчика к виджету
+        for handler in logger.handlers:
+            if isinstance(handler, QtLogHandler):
+                handler.log_signal.connect(self.append_log)
+                break
+
+    def append_log(self, text):
+        """Добавляем лог в QPlainTextEdit"""
+        self.ui.logs_plaintext.appendPlainText(text)  # Предполагается что log_widget есть в UI
+        # Автопрокрутка к новому сообщению
+        scrollbar = self.ui.logs_plaintext.verticalScrollBar()
+        scrollbar.setValue(scrollbar.maximum())
 
     def init_ui(self):
         self.ui = Ui_Form()
@@ -43,7 +61,7 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         self.ui.move_cords_button.clicked.connect(self.changeRobotPosition)
 
         self.motors_list_auto = [] # не должно быть тут??
-        
+
         self.ui.comboBox.currentIndexChanged.connect(self.updateMoveVariant)
         self.ui.motor_1_minus.clicked.connect(lambda: self.update_cords(1, -0.05))
         self.ui.motor_1_plus.clicked.connect(lambda: self.update_cords(1, 0.05))
@@ -51,10 +69,10 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         self.ui.motor_2_plus.clicked.connect(lambda: self.update_cords(2, 0.05))
         self.ui.motor_3_minus.clicked.connect(lambda: self.update_cords(3, -0.05))
         self.ui.motor_3_plus.clicked.connect(lambda: self.update_cords(3, 0.05))
-        self.ui.motor_4_plus.clicked.connect(lambda: self.update_cords(4, -0.05))
-        self.ui.motor_5_plus.clicked.connect(lambda: self.update_cords(4, 0.05))
+        self.ui.motor_4_minus.clicked.connect(lambda: self.update_cords(4, -0.05))
+        self.ui.motor_4_plus.clicked.connect(lambda: self.update_cords(4, 0.05))
         self.ui.motor_5_minus.clicked.connect(lambda: self.update_cords(5, -0.05))
-        self.ui.motor_4_minus.clicked.connect(lambda: self.update_cords(5, 0.05))
+        self.ui.motor_5_plus.clicked.connect(lambda: self.update_cords(5, 0.05))
         self.ui.motor_6_minus.clicked.connect(lambda: self.update_cords(6, -0.05))
         self.ui.motor_6_plus.clicked.connect(lambda: self.update_cords(6, 0.05))
         
@@ -87,10 +105,10 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         if self.move_variant == "J":
             self.motors_list_actual = self.motors_list_joint
             self.motors_list_actual[motor_number-1] += x
-            logger.debug(f'Текущее положение:'+ ''.join(str(i) for i in self.motors_list_actual))
+            logger.debug(f'Текущее положение: '+ ' '.join(str(i) for i in self.motors_list_actual))
         elif self.move_variant == "L":
             self.motors_list_actual[motor_number-1] += x
-            logger.debug(f'Текущее положение:'+ ''.join(str(i) for i in self.motors_list_actual))
+            logger.debug(f'Текущее положение: '+ ' '.join(str(i) for i in self.motors_list_actual))
 
         self.move_hand()   
 
@@ -99,7 +117,6 @@ class RobotControlGUI(QMainWindow, Ui_Form):
             self.robot.MoveJ(self.motors_list_actual)
         elif self.move_variant == "L":
             self.robot.MoveL(self.motors_list_actual)
-
 
     def updateMoveVariant(self):
         if self.move_variant == "J":
@@ -172,7 +189,7 @@ class RobotControlGUI(QMainWindow, Ui_Form):
 
 
         logger.debug('Робот перемещён на заданную позицию')
-        logger.debug(f'Текущее положение:'+ ''.join(str(i) for i in self.motors_list_actual)) 
+        logger.debug(f'Текущее положение: '+ ' '.join(str(i) for i in self.motors_list_actual)) 
 
     def update_frames(self):
         # 1й фрейм
@@ -194,12 +211,14 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         if self.cap3.isOpened():
             ret3, frame3 = self.cap3.read()
             if ret3:
-                frame3 = self.video_processor.process_frame(frame3)
-                # frame3 = cv2.cvtColor(frame3, cv2.COLOR_BGR2RGB)
-                # img3 = QImage(frame3, frame3.shape[1], frame3.shape[0], QImage.Format_RGB888)
+                frame3, shape, color_name = self.video_processor.process_frame(frame3)
+
                 img3 = QImage(frame3.data, frame3.shape[1], frame3.shape[0], 
                         QImage.Format_RGB888).rgbSwapped()
                 self.video_label3.setPixmap(QPixmap.fromImage(img3))
+
+                self.ui.color_data.setText(color_name)
+                self.ui.shape_data.setText(shape)
 
     # освобождение ресурсов при закрытии
     def closeEvent(self, event):

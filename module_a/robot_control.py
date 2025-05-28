@@ -51,12 +51,3 @@ class RobotController:
             time.sleep(1)
         except Exception as e:
             logger.debug(f'Ошибка перемещения: {str(e)}')
-        
-
-    # def switch_state(self, new_state):
-    #     self.current_state = self.states_list[new_state]
-    #     if self.current_state == 'Аварийная остановка':
-    #         logs.add_log(f'Состояние робота: {self.current_state}', True)
-    #     else:
-    #         logs.add_log(f'Состояние робота: {self.current_state}')
-
