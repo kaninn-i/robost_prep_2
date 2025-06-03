@@ -19,35 +19,16 @@ class RobotState:
     }
 
     def __init__(self):    
-        self._current = self.STATES['ON']
-
+        self._current_state = self.STATES['ON']
+        # self.current_cords_cords = coordinates ?
+ 
     @property
-    def current(self):
-        return self._current
+    def current_state(self):
+        return self._current_state
+    
+    @property
+    def current_cords(self):
+        pass
     
     def set_state(self, new_state):
-        self._current = self.STATES[new_state]
-
-
-class RobotController:
-    def __init__(self, ip_adress):
-        self.ip = ip_adress
-        self.robot = MCX()
-        self.state = RobotState()
-        self.connect()
-        
-
-    def connect(self):
-        try:
-            self.robot.connect(self.ip)
-            logger.debug('Робот подключен')
-
-        except Exception as e:
-            logger.debug(f'Ошибка подключения: {str(e)}')
-
-    def move_to_start(self):
-        try:
-            self.robot.move_to_start()
-            time.sleep(1)
-        except Exception as e:
-            logger.debug(f'Ошибка перемещения: {str(e)}')
+        self._current_state = self.STATES[new_state]

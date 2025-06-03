@@ -1,6 +1,6 @@
 from design import Ui_Form
 from config import Config
-from robot_control import RobotController, RobotState
+from robot_control import RobotState
 from video_processing import VideoProcessor
 from mcx.mcx_control import *
 
@@ -18,27 +18,30 @@ class RobotControlGUI(QMainWindow, Ui_Form):
     def __init__(self):
         super().__init__()
         self.config = Config()
-        self.robot_controller = RobotController(self.config.ROBOT_IP)
-        self.robot_state = RobotState()
         self.robot = MCX()
+        self.robot_state = RobotState()
         self.video_processor = VideoProcessor()
+
+        self.robot.connect(self.config.ROBOT_IP)
 
         self.init_ui()
         self.init_cameras()
         self.setup_logging()
 
+        # от этого избавляемся и приводим к одной переменной actual, которую пихаем в стейт
         self.motors_list_joint = list(self.robot.get_joint_pos())
         self.motors_list_cart = list(self.robot.get_cart_pos())
         self.motor_list_actual = list() # запихнуть в стейт?
+        # ------------------------------------------------------
+
         logger.debug(f'Текущее положение: '+ ' '.join(str(i) for i in self.motors_list_joint))
         self.move_variant = "J"
 
 
     def setup_logging(self):
-        # Получаем логгер
+        '''Подключение сигнала к виджету'''
         logger = setup_logger(__name__)
         
-        # Подключаем сигнал GUI обработчика к виджету
         for handler in logger.handlers:
             if isinstance(handler, QtLogHandler):
                 handler.log_signal.connect(self.append_log)
@@ -46,12 +49,13 @@ class RobotControlGUI(QMainWindow, Ui_Form):
 
     def append_log(self, text):
         """Добавляем лог в QPlainTextEdit"""
-        self.ui.logs_plaintext.appendPlainText(text)  # Предполагается что log_widget есть в UI
-        # Автопрокрутка к новому сообщению
+        self.ui.logs_plaintext.appendPlainText(text)
+        # автопрокрутка к новому сообщению
         scrollbar = self.ui.logs_plaintext.verticalScrollBar()
         scrollbar.setValue(scrollbar.maximum())
 
     def init_ui(self):
+        '''Подключение модуля с дизайном gui'''
         self.ui = Ui_Form()
         self.ui.setupUi(self)
         self.ui.On_button.clicked.connect(self.changeOnOffState)
@@ -77,10 +81,11 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         self.ui.motor_6_plus.clicked.connect(lambda: self.update_cords(6, 0.05))
         
     def init_cameras(self):
-        # #  -------------------- камеры ------------
-        self.cap1 = cv2.VideoCapture(0)  # Первая камера
-        self.cap2 = cv2.VideoCapture(0)  # Вторая камера (если есть)
-        self.cap3 = cv2.VideoCapture(0)  # Третья камера (если есть)
+        '''Инициализация камер и отображения видео'''
+
+        self.cap1 = cv2.VideoCapture(0)
+        self.cap2 = cv2.VideoCapture(0)
+        self.cap3 = cv2.VideoCapture(0)
         
         # QLabel для отображения видео внутри фреймов
         self.video_label1 = QLabel(self.ui.videoframe_1)
@@ -102,23 +107,30 @@ class RobotControlGUI(QMainWindow, Ui_Form):
 
 
     def update_cords(self, motor_number, x):
+        '''Ф-я, обновляющая координаты для их дальнейшего вывода или
+          перемещения на них, в зависимости от стиля движения'''
+        
         if self.move_variant == "J":
             self.motors_list_actual = self.motors_list_joint
+            # self.motors_list_actual = self.robot.get_joint_pos() ?
             self.motors_list_actual[motor_number-1] += x
-            logger.debug(f'Текущее положение: '+ ' '.join(str(i) for i in self.motors_list_actual))
-        elif self.move_variant == "L":
-            self.motors_list_actual[motor_number-1] += x
-            logger.debug(f'Текущее положение: '+ ' '.join(str(i) for i in self.motors_list_actual))
 
+        elif self.move_variant == "L":
+            self.motors_list_actual = self.robot.get_cart_pos()
+            self.motors_list_actual[motor_number-1] += x
+            
+        logger.debug(f'Текущее положение: '+ ' '.join(str(i) for i in self.motors_list_actual))
         self.move_hand()   
 
     def move_hand(self):
+        '''Движение робота в зависимости от текущего стиля движения'''
         if self.move_variant == "J":
             self.robot.MoveJ(self.motors_list_actual)
         elif self.move_variant == "L":
             self.robot.MoveL(self.motors_list_actual)
 
     def updateMoveVariant(self):
+        '''Ф-я для изменения стиля движения'''
         if self.move_variant == "J":
             self.motors_list_actual = list(self.robot.get_cart_pos())
             self.move_variant = "L"
@@ -130,6 +142,7 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         logger.debug(f'Режим выполнения: Move{self.move_variant}')
 
     def change_gripper_status(self):
+        '''Ф-я для изменения статуса гриппра (захвата)'''
         _translate = QtCore.QCoreApplication.translate
         if self.robot.gripper_state == 0.0:
             self.robot.gripper_state = 1.0
@@ -143,11 +156,12 @@ class RobotControlGUI(QMainWindow, Ui_Form):
 
 
     def changeOnOffState(self):
+        '''Ф-я для изменения статуса робота, вкл/выкл'''
         _translate = QtCore.QCoreApplication.translate
-        if self.robot_state.current == self.robot_state.STATES['OFF'] or self.robot_state.current == self.robot_state.STATES['WAIT']:
+        if self.robot_state.current_state == self.robot_state.STATES['OFF'] or self.robot_state.current_state == self.robot_state.STATES['WAIT']:
             self.ui.On_button.setText(_translate("Form", "Выкл"))
             self.robot_state.set_state('ON')
-            self.ui.State_data.setText(_translate("Form", self.robot_state.current))
+            self.ui.State_data.setText(_translate("Form", self.robot_state.current_state))
             self.robot.move_to_start()
             time.sleep(1)
             logger.debug('Робот включен и находится на стартовой позиции')
@@ -155,25 +169,29 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         else:
             self.ui.On_button.setText(_translate("Form", "Вкл"))
             self.robot_state.set_state('OFF')
-            self.ui.State_data.setText(_translate("Form", self.robot_state.current))
+            self.ui.State_data.setText(_translate("Form", self.robot_state.current_state))
             self.robot.move_to_start()
             time.sleep(1)
             logger.debug('Робот выключен')
 
     def changePauseState(self):
+        '''Ф-я для изменения статуса робота, пауза'''
         _translate = QtCore.QCoreApplication.translate
         self.robot_state.set_state('WAIT')
-        self.ui.State_data.setText(_translate("Form", self.robot_state.current))
+        self.ui.State_data.setText(_translate("Form", self.robot_state.current_state))
         self.ui.On_button.setText(_translate("Form", "Вкл"))
         logger.debug('Робот приостановил свою работу')
 
     def changeEmergencyState(self):
+        '''Ф-я для изменения статуса робота, экстренная остановка'''
         _translate = QtCore.QCoreApplication.translate
         self.robot_state.set_state('EMERGENCY')
-        self.ui.State_data.setText(_translate("Form", self.robot_state.current))
+        self.ui.State_data.setText(_translate("Form", self.robot_state.current_state))
         logger.error('Робот аварийно остановлен')
 
     def changeRobotPosition(self):
+        '''Автоматическое перемещение робота по заданным координатам'''
+        self.motors_list_auto = []
         for row in range(self.ui.move_cords_table.rowCount()):
             for column in range(self.ui.move_cords_table.columnCount()):
                 self.motors_list_auto.append(self.ui.move_cords_table.item(row, column).data(2))
@@ -192,6 +210,7 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         logger.debug(f'Текущее положение: '+ ' '.join(str(i) for i in self.motors_list_actual)) 
 
     def update_frames(self):
+        '''Ф-я для обновления кадров на камерах'''
         # 1й фрейм
         ret1, frame1 = self.cap1.read()
         if ret1:

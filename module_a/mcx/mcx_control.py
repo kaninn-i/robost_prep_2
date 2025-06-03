@@ -11,7 +11,7 @@ class MCX():
     def get_joint_pos(self):
         return [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     def get_cart_pos(self):
-        return [1,1,1,1,1.1]
+        return [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
     def MoveJ(self, cords):
         pass
