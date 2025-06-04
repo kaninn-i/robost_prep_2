@@ -3,8 +3,6 @@ from mcx.mcx_control import *
 from logging_handler import setup_logger
 logger = setup_logger(__name__)
 
-import time
-
 #максимальная дистанция робота 0.95
 #если вводить точку [0.95, 0, 0]
 #соответсвенно если брать 3-х мероное пространство, то нужно вычислять дистанцию

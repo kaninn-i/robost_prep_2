@@ -89,15 +89,15 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         
         # QLabel для отображения видео внутри фреймов
         self.video_label1 = QLabel(self.ui.videoframe_1)
-        self.video_label1.resize(340, 260)
+        self.video_label1.resize(320, 180)
         self.video_label1.setScaledContents(True)
 
         self.video_label2 = QLabel(self.ui.videoframe_2)
-        self.video_label2.resize(340, 260)
+        self.video_label2.resize(320, 180)
         self.video_label2.setScaledContents(True)
 
         self.video_label3 = QLabel(self.ui.videoframe_3)
-        self.video_label3.resize(340, 260)
+        self.video_label3.resize(320, 180)
         self.video_label3.setScaledContents(True)
 
         # таймер для обновления видео
