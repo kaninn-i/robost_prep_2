@@ -1,14 +1,18 @@
-from module_a.design import Ui_Form
-from module_a.config import Config
-from module_a.robot_control import RobotState
-
+from design import Ui_Form
+from config import Config
+from robot_control import RobotState
+from video_processing import VideoProcessor
+from yolo_processing import YoloProcessor
 from mcx.mcx_control import *
 
+import cv2
 import time
-from PyQt5.QtWidgets import QMainWindow
-from PyQt5 import QtCore
 
-from module_a.logging_handler import setup_logger, QtLogHandler
+from PyQt5.QtWidgets import QLabel, QMainWindow
+from PyQt5 import QtCore
+from PyQt5.QtGui import QImage, QPixmap
+
+from logging_handler import setup_logger, QtLogHandler
 logger = setup_logger(__name__)
 
 class RobotControlGUI(QMainWindow, Ui_Form):
@@ -17,13 +21,17 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         self.config = Config()
         self.robot = MCX()
         self.robot_state = RobotState()
+        self.video_processor = VideoProcessor()
+        self.yolo_processor = YoloProcessor(model_path='/home/ilya/Documents/GitHub/robost_prep_2/runs/detect/yolov8s_5epo/weights/best.pt')
+
 
         self.robot.connect(self.config.ROBOT_IP)
 
         self.init_ui()
+        self.init_cameras()
         self.setup_logging()
 
-        # от этого избавляемся и приводим к одной переменной actual, которую пихаем в стейт???
+        # от этого избавляемся и приводим к одной переменной actual, которую пихаем в стейт
         self.motors_list_joint = list(self.robot.get_joint_pos())
         self.motors_list_cart = list(self.robot.get_cart_pos())
         self.motor_list_actual = list() # запихнуть в стейт?
@@ -57,7 +65,7 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         self.ui.Pause_button.clicked.connect(self.changePauseState)
         self.ui.Stop_button.clicked.connect(self.changeEmergencyState)
         self.ui.gripper_button.clicked.connect(self.change_gripper_status)
-        # self.ui.move_cords_button.clicked.connect(self.changeRobotPosition)
+        self.ui.move_cords_button.clicked.connect(self.changeRobotPosition)
 
         self.motors_list_auto = [] # не должно быть тут??
 
@@ -75,6 +83,32 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         self.ui.motor_6_minus.clicked.connect(lambda: self.update_cords(6, -0.05))
         self.ui.motor_6_plus.clicked.connect(lambda: self.update_cords(6, 0.05))
         
+    def init_cameras(self):
+        '''Инициализация камер и отображения видео'''
+
+        self.cap1 = cv2.VideoCapture(0)
+        self.cap2 = cv2.VideoCapture(0)
+        self.cap3 = cv2.VideoCapture(0)
+        
+        # QLabel для отображения видео внутри фреймов
+        self.video_label1 = QLabel(self.ui.videoframe_1)
+        self.video_label1.resize(320, 180)
+        self.video_label1.setScaledContents(True)
+
+        self.video_label2 = QLabel(self.ui.videoframe_2)
+        self.video_label2.resize(320, 180)
+        self.video_label2.setScaledContents(True)
+
+        self.video_label3 = QLabel(self.ui.videoframe_3)
+        self.video_label3.resize(320, 180)
+        self.video_label3.setScaledContents(True)
+
+        # таймер для обновления видео
+        self.video_timer = QtCore.QTimer()
+        self.video_timer.timeout.connect(self.update_frames)
+        self.video_timer.start(30)  # 30 ms интервал
+
+
     def update_cords(self, motor_number, x):
         '''Ф-я, обновляющая координаты для их дальнейшего вывода или
           перемещения на них, в зависимости от стиля движения'''
@@ -151,10 +185,87 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         self.ui.On_button.setText(_translate("Form", "Вкл"))
         logger.debug('Робот приостановил свою работу')
 
-    # не хватает нормальной экстренной остановки
     def changeEmergencyState(self):
         '''Ф-я для изменения статуса робота, экстренная остановка'''
         _translate = QtCore.QCoreApplication.translate
         self.robot_state.set_state('EMERGENCY')
         self.ui.State_data.setText(_translate("Form", self.robot_state.current_state))
         logger.error('Робот аварийно остановлен')
+
+    def changeRobotPosition(self):
+        '''Автоматическое перемещение робота по заданным координатам'''
+        self.motors_list_auto = []
+        for row in range(self.ui.move_cords_table.rowCount()):
+            for column in range(self.ui.move_cords_table.columnCount()):
+                self.motors_list_auto.append(self.ui.move_cords_table.item(row, column).data(2))
+        for i, l in enumerate(self.motors_list_auto):
+            self.motors_list_auto[i] = float(l)
+
+        logger.debug('Данные для перемещения получены')
+
+        self.motors_list_actual = self.motors_list_auto
+        self.robot.MoveL(self.motors_list_actual) # другая переменная??
+
+        time.sleep(1)
+
+
+        logger.debug('Робот перемещён на заданную позицию')
+        logger.debug(f'Текущее положение: '+ ' '.join(str(i) for i in self.motors_list_actual)) 
+
+    def update_frames(self):
+        '''Ф-я для обновления кадров на камерах'''
+        # 1й фрейм
+        ret1, frame1 = self.cap1.read()
+        if ret1:
+            frame1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2RGB)
+            img1 = QImage(frame1, frame1.shape[1], frame1.shape[0], QImage.Format_RGB888)
+            self.video_label1.setPixmap(QPixmap.fromImage(img1))
+      
+        # 2й фрейм
+        if self.cap2.isOpened():
+            ret2, frame2 = self.cap2.read()
+            if ret2:
+                frame2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2RGB)
+                img2 = QImage(frame2, frame2.shape[1], frame2.shape[0], QImage.Format_RGB888)
+                self.video_label2.setPixmap(QPixmap.fromImage(img2))
+
+        if self.cap2.isOpened():
+            ret2, frame2 = self.cap2.read()
+            if ret2:
+                # Обработка кадра YOLO
+                frame2, yolo_objects = self.yolo_processor.process_frame(frame2)
+                
+                # Конвертация для отображения
+                frame2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2RGB)
+                img2 = QImage(frame2, frame2.shape[1], frame2.shape[0], 
+                             QImage.Format_RGB888)
+                self.video_label2.setPixmap(QPixmap.fromImage(img2))
+                
+                # Обновление информации об объектах
+                if yolo_objects:
+                    # Формируем строку с информацией
+                    obj_info = "\n".join([
+                        f"{obj['class']} ({obj['confidence']:.2f})" 
+                        for obj in yolo_objects
+                    ])
+                    self.ui.model_data.setText(obj_info)
+
+        # 3ий фрейм
+        if self.cap3.isOpened():
+            ret3, frame3 = self.cap3.read()
+            if ret3:
+                frame3, shape, color_name = self.video_processor.process_frame(frame3)
+
+                img3 = QImage(frame3.data, frame3.shape[1], frame3.shape[0], 
+                        QImage.Format_RGB888).rgbSwapped()
+                self.video_label3.setPixmap(QPixmap.fromImage(img3))
+
+                self.ui.color_data.setText(color_name)
+                self.ui.shape_data.setText(shape)
+
+    # освобождение ресурсов при закрытии
+    def closeEvent(self, event):
+        self.cap1.release()
+        self.cap2.release()
+        self.cap3.release()
+        event.accept()

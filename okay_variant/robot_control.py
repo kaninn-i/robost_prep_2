@@ -1,4 +1,6 @@
-from module_a.logging_handler import setup_logger
+from mcx.mcx_control import *
+
+from logging_handler import setup_logger
 logger = setup_logger(__name__)
 
 #максимальная дистанция робота 0.95
