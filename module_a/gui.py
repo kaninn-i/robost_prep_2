@@ -2,6 +2,7 @@ from design import Ui_Form
 from config import Config
 from robot_control import RobotState
 from video_processing import VideoProcessor
+from yolo_processing import YoloProcessor
 from mcx.mcx_control import *
 
 import cv2
@@ -21,6 +22,8 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         self.robot = MCX()
         self.robot_state = RobotState()
         self.video_processor = VideoProcessor()
+        self.yolo_processor = YoloProcessor(model_path='/home/ilya/Documents/GitHub/robost_prep_2/runs/detect/yolov8s_5epo/weights/best.pt')
+
 
         self.robot.connect(self.config.ROBOT_IP)
 
@@ -226,6 +229,27 @@ class RobotControlGUI(QMainWindow, Ui_Form):
                 img2 = QImage(frame2, frame2.shape[1], frame2.shape[0], QImage.Format_RGB888)
                 self.video_label2.setPixmap(QPixmap.fromImage(img2))
 
+        if self.cap2.isOpened():
+            ret2, frame2 = self.cap2.read()
+            if ret2:
+                # Обработка кадра YOLO
+                frame2, yolo_objects = self.yolo_processor.process_frame(frame2)
+                
+                # Конвертация для отображения
+                frame2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2RGB)
+                img2 = QImage(frame2, frame2.shape[1], frame2.shape[0], 
+                             QImage.Format_RGB888)
+                self.video_label2.setPixmap(QPixmap.fromImage(img2))
+                
+                # Обновление информации об объектах
+                if yolo_objects:
+                    # Формируем строку с информацией
+                    obj_info = "\n".join([
+                        f"{obj['class']} ({obj['confidence']:.2f})" 
+                        for obj in yolo_objects
+                    ])
+                    self.ui.model_data.setText(obj_info)
+
         # 3ий фрейм
         if self.cap3.isOpened():
             ret3, frame3 = self.cap3.read()
@@ -245,5 +269,3 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         self.cap2.release()
         self.cap3.release()
         event.accept()
-
-    
