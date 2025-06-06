@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QMainWindow
 from PyQt5 import QtCore
 
 from module_a.logging_handler import setup_logger, QtLogHandler
-logger = setup_logger(__name__)
+# logger = setup_logger(__name__)
 
 class RobotControlGUI(QMainWindow, Ui_Form):
     def __init__(self):
@@ -29,21 +29,21 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         self.motor_list_actual = list() # запихнуть в стейт?
         # ------------------------------------------------------
 
-        logger.debug(f'Текущее положение: '+ ' '.join(str(i) for i in self.motors_list_joint))
-        self.move_variant = "J"
+        self.logger.debug(f'Текущее положение: '+ ' '.join(str(i) for i in self.motors_list_joint))
+        self.move_variant = "J" # убрать в стейт???
 
 
     def setup_logging(self):
         '''Подключение сигнала к виджету'''
-        logger = setup_logger(__name__)
+        self.logger = setup_logger(__name__)
         
-        for handler in logger.handlers:
+        for handler in self.logger.handlers:
             if isinstance(handler, QtLogHandler):
                 handler.log_signal.connect(self.append_log)
                 break
 
     def append_log(self, text):
-        """Добавляем лог в QPlainTextEdit"""
+        """Добавление логов в QPlainTextEdit"""
         self.ui.logs_plaintext.appendPlainText(text)
         # автопрокрутка к новому сообщению
         scrollbar = self.ui.logs_plaintext.verticalScrollBar()
@@ -57,23 +57,29 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         self.ui.Pause_button.clicked.connect(self.changePauseState)
         self.ui.Stop_button.clicked.connect(self.changeEmergencyState)
         self.ui.gripper_button.clicked.connect(self.change_gripper_status)
-        # self.ui.move_cords_button.clicked.connect(self.changeRobotPosition)
-
-        self.motors_list_auto = [] # не должно быть тут??
 
         self.ui.comboBox.currentIndexChanged.connect(self.updateMoveVariant)
-        self.ui.motor_1_minus.clicked.connect(lambda: self.update_cords(1, -0.05))
-        self.ui.motor_1_plus.clicked.connect(lambda: self.update_cords(1, 0.05))
-        self.ui.motor_2_minus.clicked.connect(lambda: self.update_cords(2, -0.05))
-        self.ui.motor_2_plus.clicked.connect(lambda: self.update_cords(2, 0.05))
-        self.ui.motor_3_minus.clicked.connect(lambda: self.update_cords(3, -0.05))
-        self.ui.motor_3_plus.clicked.connect(lambda: self.update_cords(3, 0.05))
-        self.ui.motor_4_minus.clicked.connect(lambda: self.update_cords(4, -0.05))
-        self.ui.motor_4_plus.clicked.connect(lambda: self.update_cords(4, 0.05))
-        self.ui.motor_5_minus.clicked.connect(lambda: self.update_cords(5, -0.05))
-        self.ui.motor_5_plus.clicked.connect(lambda: self.update_cords(5, 0.05))
-        self.ui.motor_6_minus.clicked.connect(lambda: self.update_cords(6, -0.05))
-        self.ui.motor_6_plus.clicked.connect(lambda: self.update_cords(6, 0.05))
+
+        # self.ui.motor_1_minus.clicked.connect(lambda: self.update_cords(1, -0.05))
+        # self.ui.motor_1_plus.clicked.connect(lambda: self.update_cords(1, 0.05))
+        # self.ui.motor_2_minus.clicked.connect(lambda: self.update_cords(2, -0.05))
+        # self.ui.motor_2_plus.clicked.connect(lambda: self.update_cords(2, 0.05))
+        # self.ui.motor_3_minus.clicked.connect(lambda: self.update_cords(3, -0.05))
+        # self.ui.motor_3_plus.clicked.connect(lambda: self.update_cords(3, 0.05))
+        # self.ui.motor_4_minus.clicked.connect(lambda: self.update_cords(4, -0.05))
+        # self.ui.motor_4_plus.clicked.connect(lambda: self.update_cords(4, 0.05))
+        # self.ui.motor_5_minus.clicked.connect(lambda: self.update_cords(5, -0.05))
+        # self.ui.motor_5_plus.clicked.connect(lambda: self.update_cords(5, 0.05))
+        # self.ui.motor_6_minus.clicked.connect(lambda: self.update_cords(6, -0.05))
+        # self.ui.motor_6_plus.clicked.connect(lambda: self.update_cords(6, 0.05))
+
+        for motor_num in range(1, 7):  # Для моторов от 1 до 6
+            
+            minus_button = getattr(self.ui, f'motor_{motor_num}_minus')
+            plus_button = getattr(self.ui, f'motor_{motor_num}_plus')
+            
+            minus_button.clicked.connect(lambda _, m=motor_num: self.update_cords(m, -0.05))
+            plus_button.clicked.connect(lambda _, m=motor_num: self.update_cords(m, 0.05))
         
     def update_cords(self, motor_number, x):
         '''Ф-я, обновляющая координаты для их дальнейшего вывода или
@@ -88,7 +94,7 @@ class RobotControlGUI(QMainWindow, Ui_Form):
             self.motors_list_actual = self.robot.get_cart_pos()
             self.motors_list_actual[motor_number-1] += x
             
-        logger.debug(f'Текущее положение: '+ ' '.join(str(i) for i in self.motors_list_actual))
+        self.logger.debug(f'Текущее положение: '+ ' '.join(str(i) for i in self.motors_list_actual))
         self.move_hand()   
 
     def move_hand(self):
@@ -108,20 +114,20 @@ class RobotControlGUI(QMainWindow, Ui_Form):
             self.motors_list_actual = list(self.robot.get_joint_pos())
             self.move_variant = "J"
 
-        logger.debug(f'Режим выполнения: Move{self.move_variant}')
+        self.logger.debug(f'Режим выполнения: Move{self.move_variant}')
 
     def change_gripper_status(self):
-        '''Ф-я для изменения статуса гриппра (захвата)'''
+        '''Ф-я для изменения статуса гриппера (захвата)'''
         _translate = QtCore.QCoreApplication.translate
         if self.robot.gripper_state == 0.0:
             self.robot.gripper_state = 1.0
             self.ui.gripper_button.setText(_translate("Form", "Отпустить"))
             
-            logger.debug('Захват активен')
+            self.logger.debug('Захват активен')
         else:
             self.robot.gripper_state = 0.0
             self.ui.gripper_button.setText(_translate("Form", "Схватить"))
-            logger.debug('Захват отпущен')
+            self.logger.debug('Захват отпущен')
 
 
     def changeOnOffState(self):
@@ -133,7 +139,7 @@ class RobotControlGUI(QMainWindow, Ui_Form):
             self.ui.State_data.setText(_translate("Form", self.robot_state.current_state))
             self.robot.move_to_start()
             time.sleep(1)
-            logger.debug('Робот включен и находится на стартовой позиции')
+            self.logger.debug('Робот включен и находится на стартовой позиции')
 
         else:
             self.ui.On_button.setText(_translate("Form", "Вкл"))
@@ -141,7 +147,7 @@ class RobotControlGUI(QMainWindow, Ui_Form):
             self.ui.State_data.setText(_translate("Form", self.robot_state.current_state))
             self.robot.move_to_start()
             time.sleep(1)
-            logger.debug('Робот выключен')
+            self.logger.debug('Робот выключен')
 
     def changePauseState(self):
         '''Ф-я для изменения статуса робота, пауза'''
@@ -149,7 +155,7 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         self.robot_state.set_state('WAIT')
         self.ui.State_data.setText(_translate("Form", self.robot_state.current_state))
         self.ui.On_button.setText(_translate("Form", "Вкл"))
-        logger.debug('Робот приостановил свою работу')
+        self.logger.debug('Робот приостановил свою работу')
 
     # не хватает нормальной экстренной остановки
     def changeEmergencyState(self):
@@ -157,4 +163,4 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         _translate = QtCore.QCoreApplication.translate
         self.robot_state.set_state('EMERGENCY')
         self.ui.State_data.setText(_translate("Form", self.robot_state.current_state))
-        logger.error('Робот аварийно остановлен')
+        self.logger.error('Робот аварийно остановлен')

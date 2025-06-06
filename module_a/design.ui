@@ -455,7 +455,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Красный</string>
+    <string/>
    </property>
   </widget>
   <widget class="QLabel" name="shape_data">
@@ -468,7 +468,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Квадрат</string>
+    <string/>
    </property>
   </widget>
   <widget class="QLabel" name="logs_label">
@@ -597,7 +597,7 @@
     </sizepolicy>
    </property>
    <property name="text">
-    <string>Квадрат</string>
+    <string/>
    </property>
    <property name="alignment">
     <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
