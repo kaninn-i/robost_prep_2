@@ -8,11 +8,11 @@ import torch
 from ultralytics import YOLO
 import cv2
 
-from logging_handler import setup_logger, QtLogHandler
+from module_a.logging_handler import setup_logger
 logger = setup_logger(__name__)
 
 class YoloProcessor:
-    def __init__(self, model_path='best.pt'):
+    def __init__(self, model_path='module_d/runs/detect/yolov8s_3epo/weights/best.pt'):
         """
         Инициализация YOLO модели
         :param model_path: путь к файлу модели .pt
