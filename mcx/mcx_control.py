@@ -4,7 +4,19 @@ class MCX():
 
     def connect(self, ip):
         pass
-    
+        
+    def disconnect(self):
+        """Disconnect from the robot."""
+        if self.is_connected:
+            try:
+                self.is_connected = False
+                print("Disconnected from the robot.")
+            except Exception as e:
+                print(f"Failed to disconnect from the robot: {e}")
+        else:
+            print("No active connection to disconnect.")
+
+
     def move_to_start(self):
         pass
 
