@@ -9,7 +9,6 @@ from PyQt5.QtWidgets import QMainWindow
 from PyQt5 import QtCore
 
 from module_a.logging_handler import setup_logger, QtLogHandler
-# logger = setup_logger(__name__)
 
 class RobotControlGUI(QMainWindow, Ui_Form):
     def __init__(self):
@@ -23,15 +22,8 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         self.init_ui()
         self.setup_logging()
 
-        # от этого избавляемся и приводим к одной переменной actual, которую пихаем в стейт???
-        self.motors_list_joint = list(self.robot.get_joint_pos())
-        self.motors_list_cart = list(self.robot.get_cart_pos())
-        self.motor_list_actual = list() # запихнуть в стейт?
-        # ------------------------------------------------------
-
-        self.logger.debug(f'Текущее положение: '+ ' '.join(str(i) for i in self.motors_list_joint))
-        self.move_variant = "J" # убрать в стейт???
-
+        self.logger.info(f'Текущее положение: '+ ' '.join(str(i) for i in self.robot.get_joint_pos()))
+        self.motors_list_actual = list()
 
     def setup_logging(self):
         '''Подключение сигнала к виджету'''
@@ -59,20 +51,6 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         self.ui.gripper_button.clicked.connect(self.change_gripper_status)
 
         self.ui.comboBox.currentIndexChanged.connect(self.updateMoveVariant)
-
-        # self.ui.motor_1_minus.clicked.connect(lambda: self.update_cords(1, -0.05))
-        # self.ui.motor_1_plus.clicked.connect(lambda: self.update_cords(1, 0.05))
-        # self.ui.motor_2_minus.clicked.connect(lambda: self.update_cords(2, -0.05))
-        # self.ui.motor_2_plus.clicked.connect(lambda: self.update_cords(2, 0.05))
-        # self.ui.motor_3_minus.clicked.connect(lambda: self.update_cords(3, -0.05))
-        # self.ui.motor_3_plus.clicked.connect(lambda: self.update_cords(3, 0.05))
-        # self.ui.motor_4_minus.clicked.connect(lambda: self.update_cords(4, -0.05))
-        # self.ui.motor_4_plus.clicked.connect(lambda: self.update_cords(4, 0.05))
-        # self.ui.motor_5_minus.clicked.connect(lambda: self.update_cords(5, -0.05))
-        # self.ui.motor_5_plus.clicked.connect(lambda: self.update_cords(5, 0.05))
-        # self.ui.motor_6_minus.clicked.connect(lambda: self.update_cords(6, -0.05))
-        # self.ui.motor_6_plus.clicked.connect(lambda: self.update_cords(6, 0.05))
-
         for motor_num in range(1, 7):  # Для моторов от 1 до 6
             
             minus_button = getattr(self.ui, f'motor_{motor_num}_minus')
@@ -85,36 +63,42 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         '''Ф-я, обновляющая координаты для их дальнейшего вывода или
           перемещения на них, в зависимости от стиля движения'''
         
-        if self.move_variant == "J":
-            self.motors_list_actual = self.motors_list_joint
-            # self.motors_list_actual = self.robot.get_joint_pos() ?
+        if self.robot_state.current_move_variant == "J":
+            self.motors_list_actual = self.robot.get_joint_pos()
             self.motors_list_actual[motor_number-1] += x
 
-        elif self.move_variant == "L":
+        elif self.robot_state.current_move_variant == "L":
+            self.motors_list_actual = self.robot.get_linear_pos()
+            self.motors_list_actual[motor_number-1] += x
+
+        elif self.robot_state.current_move_variant == "C":
             self.motors_list_actual = self.robot.get_cart_pos()
             self.motors_list_actual[motor_number-1] += x
             
-        self.logger.debug(f'Текущее положение: '+ ' '.join(str(i) for i in self.motors_list_actual))
+        self.logger.info(f'Текущее положение: '+ ' '.join(str(i) for i in self.motors_list_actual))
         self.move_hand()   
 
     def move_hand(self):
         '''Движение робота в зависимости от текущего стиля движения'''
-        if self.move_variant == "J":
+        if self.robot_state.current_move_variant == "J":
             self.robot.MoveJ(self.motors_list_actual)
-        elif self.move_variant == "L":
+        elif self.robot_state.current_move_variant == "L":
             self.robot.MoveL(self.motors_list_actual)
+        elif self.robot_state.current_move_variant == "C":
+            self.robot.MoveC(self.motors_list_actual)
+
 
     def updateMoveVariant(self):
         '''Ф-я для изменения стиля движения'''
-        if self.move_variant == "J":
+        if self.robot_state.current_move_variant == "J":
             self.motors_list_actual = list(self.robot.get_cart_pos())
-            self.move_variant = "L"
+            self.robot_state.set_move_variant("L")
          
-        elif self.move_variant == "L":
+        elif self.robot_state.current_move_variant == "L":
             self.motors_list_actual = list(self.robot.get_joint_pos())
-            self.move_variant = "J"
+            self.robot_state.set_move_variant("J")
 
-        self.logger.debug(f'Режим выполнения: Move{self.move_variant}')
+        self.logger.info(f'Режим выполнения: {self.robot_state.current_move_variant}')
 
     def change_gripper_status(self):
         '''Ф-я для изменения статуса гриппера (захвата)'''
@@ -123,11 +107,11 @@ class RobotControlGUI(QMainWindow, Ui_Form):
             self.robot.gripper_state = 1.0
             self.ui.gripper_button.setText(_translate("Form", "Отпустить"))
             
-            self.logger.debug('Захват активен')
+            self.logger.info('Захват активен')
         else:
             self.robot.gripper_state = 0.0
             self.ui.gripper_button.setText(_translate("Form", "Схватить"))
-            self.logger.debug('Захват отпущен')
+            self.logger.info('Захват отпущен')
 
 
     def changeOnOffState(self):
@@ -139,7 +123,7 @@ class RobotControlGUI(QMainWindow, Ui_Form):
             self.ui.State_data.setText(_translate("Form", self.robot_state.current_state))
             self.robot.move_to_start()
             time.sleep(1)
-            self.logger.debug('Робот включен и находится на стартовой позиции')
+            self.logger.info('Робот включен и находится на стартовой позиции')
 
         else:
             self.ui.On_button.setText(_translate("Form", "Вкл"))
@@ -147,7 +131,7 @@ class RobotControlGUI(QMainWindow, Ui_Form):
             self.ui.State_data.setText(_translate("Form", self.robot_state.current_state))
             self.robot.move_to_start()
             time.sleep(1)
-            self.logger.debug('Робот выключен')
+            self.logger.info('Робот выключен')
 
     def changePauseState(self):
         '''Ф-я для изменения статуса робота, пауза'''
@@ -155,7 +139,7 @@ class RobotControlGUI(QMainWindow, Ui_Form):
         self.robot_state.set_state('WAIT')
         self.ui.State_data.setText(_translate("Form", self.robot_state.current_state))
         self.ui.On_button.setText(_translate("Form", "Вкл"))
-        self.logger.debug('Робот приостановил свою работу')
+        self.logger.info('Робот приостановил свою работу')
 
     # не хватает нормальной экстренной остановки
     def changeEmergencyState(self):

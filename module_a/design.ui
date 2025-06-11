@@ -23,7 +23,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Выкл</string>
+    <string>Вкл</string>
    </property>
   </widget>
   <widget class="QPushButton" name="Pause_button">
@@ -88,7 +88,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>В работе</string>
+    <string>Выключен</string>
    </property>
   </widget>
   <widget class="QFrame" name="videoframe_1">
