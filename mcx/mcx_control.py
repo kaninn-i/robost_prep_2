@@ -22,6 +22,10 @@ class MCX():
 
     def get_joint_pos(self):
         return [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    
+    def get_linear_pos(self):
+        return [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    
     def get_cart_pos(self):
         return [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
@@ -29,6 +33,9 @@ class MCX():
         pass
 
     def MoveL(self, cords):
+        pass
+
+    def MoveC(self, cords):
         pass
 
     def engage(self):

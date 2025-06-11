@@ -53,14 +53,20 @@ class CvGui(AutomaticGUI):
         if self.cap2.isOpened():
             ret2, frame2 = self.cap2.read()
             if ret2:
-                frame2, shape, color_name = self.video_processor.process_frame(frame2)
+                frame2, detected_objects = self.video_processor.process_frame(frame2)
 
                 img2 = QImage(frame2.data, frame2.shape[1], frame2.shape[0], 
                         QImage.Format_RGB888).rgbSwapped()
                 self.video_label2.setPixmap(QPixmap.fromImage(img2))
 
-                self.ui.color_data.setText(color_name)
-                self.ui.shape_data.setText(shape)
+                # # Формируем строку с информацией
+                # obj_info = "\n".join([
+                #     f"{obj['class']} ({obj['confidence']:.2f})" 
+                #     for obj in detected_objects
+                # ])
+                # self.ui.color_data.setText(obj_info)
+                # self.ui.shape_data.setText(shape)
+                self.logger.debug(detected_objects)
       
 
     # освобождение ресурсов при закрытии

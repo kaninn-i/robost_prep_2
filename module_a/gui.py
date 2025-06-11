@@ -121,6 +121,8 @@ class RobotControlGUI(QMainWindow, Ui_Form):
             self.ui.On_button.setText(_translate("Form", "Выкл"))
             self.robot_state.set_state('ON')
             self.ui.State_data.setText(_translate("Form", self.robot_state.current_state))
+
+            self.robot.connect(self.config.ROBOT_IP)
             self.robot.move_to_start()
             time.sleep(1)
             self.logger.info('Робот включен и находится на стартовой позиции')
@@ -129,8 +131,10 @@ class RobotControlGUI(QMainWindow, Ui_Form):
             self.ui.On_button.setText(_translate("Form", "Вкл"))
             self.robot_state.set_state('OFF')
             self.ui.State_data.setText(_translate("Form", self.robot_state.current_state))
+
             self.robot.move_to_start()
             time.sleep(1)
+            self.robot.disconnect()
             self.logger.info('Робот выключен')
 
     def changePauseState(self):
