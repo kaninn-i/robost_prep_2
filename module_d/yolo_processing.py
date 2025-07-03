@@ -22,7 +22,7 @@ class YoloProcessor:
         self.class_names = self.model.names  # Получение названий классов
 
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        logger.debug(f'Используемое устройство для модели: {self.device}')
+        logger.info(f'Используемое устройство для модели: {self.device}')
         self.model.to(self.device)
     
     def process_frame(self, frame):
